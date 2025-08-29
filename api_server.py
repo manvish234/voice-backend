@@ -11,16 +11,17 @@ import sys
 import re
 import subprocess as sp
 from pathlib import Path
-
 import pandas as pd
 from dotenv import load_dotenv
 from rapidfuzz import fuzz
 from fastapi import FastAPI
 from pydantic import BaseModel
-
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+# ----------------------------
+# FastAPI setup
+# ----------------------------
+app = FastAPI(title="SAFE Voice Assistant API")
 
 # ✅ Allow frontend to access backend
 app.add_middleware(
@@ -30,7 +31,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # ----------------------------
 # Backend unpack check
@@ -61,12 +61,43 @@ else:
     print("⚠️ No qa.csv found, running with empty Q&A set")
 
 # ----------------------------
-# FastAPI app
+# Models
 # ----------------------------
-app = FastAPI(title="SAFE Voice Assistant API")
-
 class Query(BaseModel):
     text: str
+
+# ----------------------------
+# API Routes
+# ----------------------------
+
+@app.get("/")
+def root():
+    return {"status": "SAFE API running ✅"}
+
+@app.get("/status")
+def status():
+    return {"running": True, "main": "SAFE backend"}
+
+@app.get("/logs")
+def logs(n: int = 100):
+    # dummy logs for now
+    return {"lines": [f"log line {i}" for i in range(n)]}
+
+@app.post("/start")
+def start():
+    return {"message": "Started ✅"}
+
+@app.post("/stop")
+def stop():
+    return {"message": "Stopped ✅"}
+
+@app.post("/quit")
+def quit_app():
+    return {"message": "Quit ✅"}
+
+@app.post("/send")
+def send_text(data: dict):
+    return {"received": data.get("text", "")}
 
 @app.post("/ask")
 def ask(query: Query):
@@ -96,7 +127,3 @@ def ask(query: Query):
             "match_score": best_score,
             "source": "fallback"
         }
-
-@app.get("/")
-def root():
-    return {"status": "SAFE API running ✅"}
