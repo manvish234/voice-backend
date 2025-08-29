@@ -11,26 +11,13 @@ import sys
 import re
 import subprocess as sp
 from pathlib import Path
+
 import pandas as pd
 from dotenv import load_dotenv
 from rapidfuzz import fuzz
 from fastapi import FastAPI
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-
-# ----------------------------
-# FastAPI setup
-# ----------------------------
-app = FastAPI(title="SAFE Voice Assistant API")
-
-# ✅ Allow frontend to access backend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://voicehelp.myclassboard.com"],  # your frontend domain
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+from pydantic import BaseModel
 
 # ----------------------------
 # Backend unpack check
@@ -61,44 +48,35 @@ else:
     print("⚠️ No qa.csv found, running with empty Q&A set")
 
 # ----------------------------
-# Models
+# FastAPI app
+# ----------------------------
+app = FastAPI(title="SAFE Voice Assistant API")
+
+# ----------------------------
+# ✅ Enable CORS for frontend
+# ----------------------------
+origins = [
+    "https://voice-frontend-k1yr.onrender.com",  # Your Render frontend
+    "http://localhost:5173",                     # Local dev
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ----------------------------
+# API Models
 # ----------------------------
 class Query(BaseModel):
     text: str
 
 # ----------------------------
-# API Routes
+# Endpoints
 # ----------------------------
-
-@app.get("/")
-def root():
-    return {"status": "SAFE API running ✅"}
-
-@app.get("/status")
-def status():
-    return {"running": True, "main": "SAFE backend"}
-
-@app.get("/logs")
-def logs(n: int = 100):
-    # dummy logs for now
-    return {"lines": [f"log line {i}" for i in range(n)]}
-
-@app.post("/start")
-def start():
-    return {"message": "Started ✅"}
-
-@app.post("/stop")
-def stop():
-    return {"message": "Stopped ✅"}
-
-@app.post("/quit")
-def quit_app():
-    return {"message": "Quit ✅"}
-
-@app.post("/send")
-def send_text(data: dict):
-    return {"received": data.get("text", "")}
-
 @app.post("/ask")
 def ask(query: Query):
     user_text = query.text.strip()
@@ -127,3 +105,7 @@ def ask(query: Query):
             "match_score": best_score,
             "source": "fallback"
         }
+
+@app.get("/")
+def root():
+    return {"status": "SAFE API running ✅"}
